@@ -12,7 +12,7 @@ Without Vim, No Good Code.
 
 ## Current state
 
-Unfinished... It's already "usable" but not fully compatible with the original Ed. I'll update it slowly, but I'll do it.
+Usable, but not working **exactly** like Ed. Most of the basic features are there.
 
 ## Build && Installation
 
