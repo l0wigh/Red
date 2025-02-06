@@ -1,4 +1,4 @@
-# **R**(ust)**ed**(itor)
+# R(ust)ed(itor)
 
 Red is a clone of the famous Ed file editor from UNIX.
 
