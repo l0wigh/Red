@@ -1,5 +1,7 @@
 # R(ust)ed(itor)
 
+![screenshot](https://raw.githubusercontent.com/l0wigh/Red/refs/heads/master/red.png)
+
 Red is a clone of the famous Ed file editor from UNIX.
 
 Without Ed, No Ex
