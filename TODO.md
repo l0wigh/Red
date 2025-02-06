@@ -1,0 +1,4 @@
+- [ ] Find a way to make Red installable from the repo (in ~/.cargo/bin/ if possible)
+- [ ] Add more original ed's features
+- [ ] Manually test stuff
+- [ ] Create some automatic tests
