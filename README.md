@@ -16,6 +16,8 @@ Without Vim, No Good Code.
 
 Usable, but not working **exactly** like Ed. Most of the basic features are there.
 
+Crash might happen. Please don't use Red for important projects or use the save command (w) often.
+
 ## Build && Installation
 
 - Clone the repo
