@@ -4,6 +4,8 @@
 
 Red is a clone of the famous Ed file editor from UNIX.
 
+It is NOT Restricted Ed. I learned about this ed version after I choose the name of this project.
+
 Without Ed, No Ex
 
 Without Ex, No Vi
