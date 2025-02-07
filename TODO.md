@@ -1,6 +1,3 @@
-- [ ] Verify the current features to be working as Ed does
-      - [ ] When opening the file, using 'p' doesn't show the last line of the file
-      - [ ] I should maybe add a newline on opening a new file or a file that doesn't finish with an empty line
+- [ ] Finally manage $* $,* ,$* $,$* (numbered commands)
 - [ ] Add more original ed's features
-- [ ] Manually test stuff
 - [ ] Create some automatic tests
