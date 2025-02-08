@@ -49,7 +49,7 @@ fn red_main_loop(state: &mut RedState) {
 
     loop {
         input.clear();
-        if state.prompt {
+        if state.prompt && state.mode != MODES::INSERT {
             print!("{}", "*".to_string().bold().blue());
             std::io::stdout().flush().unwrap();
         }
@@ -247,7 +247,7 @@ fn red_print_lines(state: &mut RedState, start: usize, end: usize, numbers: bool
 
     while l_start <= end {
         if numbers {
-            let padding = end.to_string().len() - (l_start + 1).to_string().len();
+            let padding = (end + 1).to_string().len() - (l_start + 1).to_string().len();
             println!("{}{}   {}",
                 " ".repeat(padding),
                 (l_start + 1).to_string().bold().green(),
