@@ -203,8 +203,14 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
     }
     // Special cases
     else if input == "wq" {
-        red_save_file(state);
-        return true;
+        if state.filename.len() != 0 {
+            red_save_file(state);
+            return true;
+        }
+        else {
+            red_print_error();
+            return false;
+        }
     }
     else {
         red_print_error();
