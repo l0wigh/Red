@@ -26,8 +26,14 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     if let Some(x) = args.get(1) {
-        if x == "--version" {
+        if x == "--version" || x == "-v" {
             println!("{}", "0.2.0".bold().green());
+            return ;
+        }
+        else if x == "--help" || x == "-h" {
+            println!("{}", "Red Manual: https://github.com/l0wigh/Red/blob/master/doc/MANUAL.md".bold().green());
+            println!("{}", "Ed Manual: https://www.gnu.org/software/ed/manual/ed_manual.html".bold().green());
+            println!("{}", "\nEd Manual will contain stuff not implemented in Red.\nJust try it and see if it works.".bold().green());
             return ;
         }
     }
