@@ -1,7 +1,0 @@
-- [x] New file
-- [~] File missing a \n at the end
-      - Working but doesn't create a newline char as **ed** does
-- [x] Normal file
-- [x] Protected file can't be written
-      - **ed** probably reset filename as if there is no file ?
-- [x] Can't save a file if there is no filename

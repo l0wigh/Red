@@ -1,3 +1,3 @@
-- [ ] Finally manage $* $,* ,$* $,$* (numbered commands)
-- [ ] Add more original ed's features
+- [ ] Add s/reg/ex and %s/reg/ex
+- [ ] Finish the MANUAL.md
 - [ ] Create some automatic tests

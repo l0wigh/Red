@@ -19,6 +19,7 @@ struct RedState {
     filename: String,
     filesize: u64,
     modified: bool,
+    prompt: bool,
 }
 
 fn main() {
@@ -26,6 +27,7 @@ fn main() {
     let mut state: RedState = red_init_state(args);
 
     red_main_loop(&mut state);
+    red_print_goodbye();
 }
 
 fn red_main_loop(state: &mut RedState) {
@@ -33,8 +35,19 @@ fn red_main_loop(state: &mut RedState) {
 
     loop {
         input.clear();
-        std::io::stdin().read_line(&mut input).unwrap();
-        input = input.trim_end().to_string();
+        if state.prompt {
+            print!("{}", "*".to_string().bold().blue());
+            std::io::stdout().flush().unwrap();
+        }
+        if let Ok(_) = std::io::stdin().read_line(&mut input){
+            if state.mode == MODES::COMMAND {
+                input = input.trim_end().to_string();
+            }
+        }
+        else {
+            red_print_error();
+            continue ;
+        }
         if state.mode == MODES::COMMAND {
             if red_is_numbers(state, &mut input) { continue ; }
             if input.len() == 0 {
@@ -56,6 +69,7 @@ fn red_main_loop(state: &mut RedState) {
             match input.chars().nth(0).unwrap() {
                 '.' => { state.mode = MODES::COMMAND; state.line -= 1; }
                 _ => {
+                    input = input.trim_end().to_string();
                     state.content.insert(state.line, input.clone());
                     state.line += 1;
                     state.modified = true;
@@ -66,51 +80,145 @@ fn red_main_loop(state: &mut RedState) {
 }
 
 fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
-    let space_split: Vec<&str> = input.split(' ').collect();
-    // let comma_split: Vec<&str> = input.split(',').collect();
-    let mut chars_split: Vec<&str> = input.split("").collect();
-    let full_file_chars = ["%", ","];
-    chars_split.remove(0);
-    chars_split.pop();
+    let mut start: usize = 0;
+    let mut end: usize = 0;
+    let mut command: char = '?';
+    let mut comma_split: Vec<&str> = input.split(",").collect();
+    let space_split: Vec<&str> = input.split(" ").collect();
 
-    if input.len() == 2 {
-        if full_file_chars.contains(chars_split.first().unwrap()) && state.content.len() != 0 {
-            match chars_split.pop().unwrap() {
-                "n" => { red_print_lines(state, 0, state.content.len() - 1, true); }
-                "p" => { red_print_lines(state, 0, state.content.len() - 1, false); }
+    if state.content.len() == 0 {
+        red_print_error();
+        return false;
+    }
 
-                "d" => {
-                    state.content.drain(0..=state.content.len() - 1);
-                    state.modified = true;
-                }
-                "c" => {
-                    state.content.drain(0..=state.content.len() - 1);
-                    state.mode = MODES::INSERT;
-                    state.line = 0;
-                    state.modified = true;
-                }
-
-                _ => { red_print_error(); }
-            };
+    // %?
+    if input.chars().nth(0).unwrap() == '%' {
+        if input.len() == 2 {
+            start = 0;
+            end = state.content.len() - 1;
+            command = input.pop().unwrap();
         }
-        else if input == "wq" {
-            if state.filename.len() != 0 {
-                red_save_file(state);
-                return true;
+        else {
+            red_print_error()
+        }
+    }
+    // ,?
+    else if input.chars().nth(0).unwrap() == ',' {
+        if input.len() == 2 {
+            start = 0;
+            end = state.content.len() - 1;
+            command = input.pop().unwrap();
+        }
+        else {
+            command = input.pop().unwrap();
+            let split: String = input.split(",").nth(1).unwrap().to_string();
+            if let Ok(x) = split.parse::<usize>() {
+                if x != 0 && x <= state.content.len() {
+                    start = state.line;
+                    end = x - 1;
+                }
+                else {
+                    red_print_error();
+                    return false;
+                }
             }
-            red_print_error();
+            else {
+                red_print_error();
+                return false;
+            }
+        }
+    }
+    // $?
+    else if input.chars().nth(0).unwrap().is_numeric() && comma_split.len() != 2 {
+        command = input.pop().unwrap();
+        if let Ok(x) = input.parse::<usize>() {
+            if x != 0 && x <= state.content.len() {
+                start = x - 1;
+                end = x - 1;
+            }
+            else {
+                red_print_error();
+                return false;
+            }
         }
         else {
             red_print_error();
+            return false;
         }
     }
-    else if chars_split.first().unwrap().to_string() == "w" {
-        state.filename = space_split.get(1).unwrap().to_string();
+    // $,$
+    else if comma_split.len() == 2 {
+        let mut parse_command: String = comma_split.pop().unwrap().to_string();
+        command = parse_command.pop().unwrap();
+        comma_split.push(&parse_command);
+
+        if let Ok(x) = comma_split.first().unwrap().parse::<usize>() {
+            if x != 0 && x <= state.content.len() {
+                start = x - 1;
+            }
+            else {
+                red_print_error();
+                return false;
+            }
+        }
+        if let Ok(x) = comma_split.last().unwrap().parse::<usize>() {
+            if x != 0 && x <= state.content.len() {
+                end = x - 1;
+            }
+            else {
+                red_print_error();
+                return false;
+            }
+        }
+        if start > end {
+            red_print_error();
+            return false;
+        }
+    }
+    else if space_split.len() == 2 {
+        if let Some(x) = space_split.get(0) {
+            if x.to_string() == "w" {
+                red_open_file(state, space_split.get(1).unwrap().to_string(), false, true);
+                red_save_file(state);
+            }
+            else {
+                red_print_error();
+            }
+            return false;
+        }
+    }
+    // Special cases
+    else if input == "wq" {
         red_save_file(state);
+        return true;
     }
     else {
         red_print_error();
+        return false;
     }
+
+    match command {
+        'p' => { red_print_lines(state, start, end, false); }
+        'n' => { red_print_lines(state, start, end, true); }
+
+        'd' => {
+            state.content.drain(start..=end);
+            state.modified = true;
+            state.line = 0;
+        }
+        'c' => {
+            state.content.drain(start..=end);
+            state.mode = MODES::INSERT;
+            state.line = start;
+            state.modified = true;
+        }
+
+        'a' if start == end => { state.line = start + 1; state.mode = MODES::INSERT; }
+        'i' if start == end => { state.line = start; state.mode = MODES::INSERT; }
+
+        _ => { red_print_error() }
+    }
+
     return false;
 }
 
@@ -136,13 +244,15 @@ fn red_print_lines(state: &mut RedState, start: usize, end: usize, numbers: bool
 fn red_handle_single_command(state: &mut RedState, input: &mut String) -> bool {
     let command: char = input.chars().nth(0).unwrap();
     match command {
+        'P' => { state.prompt = !state.prompt; }
+
         ',' if state.content.len() != 0 => { state.line = state.content.len() - 1; println!("{}", state.content.get(state.line).unwrap()); }
         '%' if state.content.len() != 0 => { state.line = state.content.len() - 1; println!("{}", state.content.get(state.line).unwrap()); }
         'p' if state.content.len() != 0 => { println!("{}", state.content.get(state.line).unwrap()); }
         'n' if state.content.len() != 0 => { println!("{}    {}", (state.line + 1).to_string().bold().green(), state.content.get(state.line).unwrap()); }
 
-        'q' if !state.modified => { red_print_goodbye(); return true; }
-        'Q' => { red_print_goodbye(); return true; }
+        'q' if !state.modified => { return true; }
+        'Q' => { return true; }
         'w' if state.filename.len() != 0 => { red_save_file(state) }
 
         'a' if state.content.len() != 0 => { state.line += 1; state.mode = MODES::INSERT; }
@@ -186,33 +296,41 @@ fn red_init_state(args: Vec<String>) -> RedState {
         filename: String::new(),
         filesize: 0,
         modified: false,
+        prompt: false,
     };
 
     if args.len() > 1 {
-        if Path::new(args.get(1).unwrap()).is_dir() {
-            let error_filename: String = args.get(1).unwrap().to_string();
-            println!("{}{}", error_filename.bold().red(), ": is a folder".to_string().bold().red());
-        }
-        else if Path::new(args.get(1).unwrap()).exists() {
-            state.filename = args.get(1).unwrap().to_string();
+        red_open_file(&mut state, args.get(1).unwrap().to_string(), true, false);
+    }
+    return state;
+}
+
+fn red_open_file(state: &mut RedState, filename: String, verbose: bool, safeguard: bool) {
+    if Path::new(&filename).is_dir() {
+        println!("{}{}", filename.bold().red(), ": is a folder".to_string().bold().red());
+    }
+    else if Path::new(&filename).exists() {
+        state.filename = filename;
+        if !safeguard {
             if let Ok(file) = File::open(&state.filename) {
                 state.content = BufReader::new(file)
                     .lines()
                     .map(|line| line.expect("Error while reading line"))
                     .collect();
             }
-            red_save_file(&mut state);
-            if state.content.len() != 0 {
-                state.line = state.content.len() - 1;
-            }
+            red_save_file(state);
         }
-        else {
-            state.filename = args.get(1).unwrap().to_string();
-            println!("{}", "Creating a new file".to_string().bold().yellow());
+        if state.content.len() != 0 {
+            state.line = state.content.len() - 1;
+        }
+    }
+    else {
+        state.filename = filename;
+        println!("{}", "Creating a new file".to_string().bold().yellow());
+        if verbose {
             println!("{}", 0.to_string().bold().yellow());
         }
     }
-    return state;
 }
 
 fn red_save_file(state: &mut RedState) {
