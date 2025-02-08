@@ -24,6 +24,14 @@ struct RedState {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+
+    if let Some(x) = args.get(1) {
+        if x == "--version" {
+            println!("{}", "0.2.0".bold().green());
+            return ;
+        }
+    }
+
     let mut state: RedState = red_init_state(args);
 
     red_main_loop(&mut state);
