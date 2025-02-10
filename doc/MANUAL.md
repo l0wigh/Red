@@ -63,3 +63,15 @@ To see the line currently "locked" use `p` or `n` command.
 You can change line by simply putting the line number and hit enter.
 
 You are on the right line ? You good. Ok now, let's use the `s` command : s/ed/red
+
+This command will change the first occurence of ed with red on the current line.
+
+You also can use `%s` instead of `s` to do it on the whole file.
+
+This is a powerful way to replace/fix/modify line(s) since it's using a sed style format. If you want more information, look at how to use sed and regex, this will blow your mind.
+
+## Final Words
+
+That was a short introduction, but it should give you everything to start playing with Red (or even Ed or Ex).
+
+Red will not replace your everyday editor, but can be a powerful tool to do little edits that require more than echo but less than an IDE inside your good old terminal.
