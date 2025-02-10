@@ -1,3 +1,2 @@
-- [ ] Add s/reg/ex and %s/reg/ex
-- [ ] Finish the MANUAL.md
-- [ ] Create some automatic tests
+- Finish the MANUAL.md
+- Create some automatic tests

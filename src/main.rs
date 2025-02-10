@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
 use std::path::Path;
+use regex::Regex;
 
 use colored::Colorize;
 
@@ -99,6 +100,7 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
     let mut command: char = '?';
     let mut comma_split: Vec<&str> = input.split(",").collect();
     let space_split: Vec<&str> = input.split(" ").collect();
+    let regex_split: Vec<&str> = input.split("/").collect();
 
     if state.content.len() == 0 {
         red_print_error();
@@ -107,14 +109,28 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
 
     // %?
     if input.chars().nth(0).unwrap() == '%' {
+        start = 0;
+        end = state.content.len() - 1;
         if input.len() == 2 {
-            start = 0;
-            end = state.content.len() - 1;
             command = input.pop().unwrap();
+        }
+        else if input.chars().nth(1).unwrap() == 's' && regex_split.len() > 2 {
+            red_handle_regex(state, regex_split, true);
+            return false;
         }
         else {
             red_print_error()
         }
+    }
+    // s?
+    else if input.chars().nth(0).unwrap() == 's' {
+        if regex_split.len() > 2 {
+            red_handle_regex(state, regex_split, false);
+        }
+        else {
+            red_print_error();
+        }
+        return false;
     }
     // ,?
     else if input.chars().nth(0).unwrap() == ',' {
@@ -240,6 +256,57 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
     }
 
     return false;
+}
+
+fn red_handle_regex(state: &mut RedState, regex_split: Vec<&str>, whole_file: bool) {
+    let mut whole_line: bool = false;
+    let mut start: usize;
+    let end: usize;
+    let re: Regex;
+    let replacer: &str = regex_split.get(2).unwrap();
+    let mut did_changed: bool = false;
+
+    if regex_split.len() == 4 {
+        if regex_split.get(3).unwrap() == &"g" { whole_line = true; }
+        else { red_print_error(); return; }
+    }
+
+    if whole_file {
+        start = 0;
+        end = state.content.len() - 1;
+    }
+    else {
+        start = state.line;
+        end = state.line;
+    }
+
+    re = Regex::new(regex_split.get(1).unwrap()).unwrap();
+    while start <= end {
+        let to_replace: String = state.content.remove(start);
+        let mut print: bool = false;
+        if whole_line {
+            let changed = &re.replace_all(to_replace.as_str(), replacer);
+            state.content.insert(start, changed.to_string());
+            if changed != to_replace.as_str() {
+                print = true;
+            }
+        }
+        else {
+            let changed = &re.replace(to_replace.as_str(), replacer);
+            state.content.insert(start, changed.to_string());
+            if changed != to_replace.as_str() {
+                print = true;
+            }
+        }
+        if print {
+            red_print_lines(state, start, start, true);
+            did_changed = true;
+        }
+        start += 1;
+    }
+    if !did_changed {
+        red_print_error();
+    }
 }
 
 fn red_print_lines(state: &mut RedState, start: usize, end: usize, numbers: bool) {
