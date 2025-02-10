@@ -6,19 +6,11 @@ Red is a clone of the famous Ed file editor from UNIX.
 
 It is NOT Restricted Ed. I learned about this ed version after I choose the name of this project.
 
-Without Ed, No Ex
-
-Without Ex, No Vi
-
-Without Vi, No Vim
-
-Without Vim, No Good Code.
+Without Ed, no Ex. Without Ex, no Vi. Without Vi, no Vim. Without Vim, no Good Programmers.
 
 ## Current state
 
-Usable, but not working **exactly** like Ed. Most of the basic features are there.
-
-Crash might happen. Please don't use Red for important projects or use the save command (w) often.
+Basic features coming from Ed are there. Some commands might not work **exactly** like you would expect. I made some choices that feels more natural to me. For example I implemented regex search on the whole file with the `/` command. That is not the way it works in Ed or Ex. I just feel that it's more confortable.
 
 ## Build && Installation
 
@@ -39,3 +31,5 @@ Yeah I know, that's my first (and maybe last) "real" Rust program. Don't blame m
 ## Special Thanks
 
 - [bcheronn](https://github.com/bcheronn): You are the culprit for this.
+
+- [j1mbo64](https://github.com/j1mbo64): He struggled to teach me Rust. Unfortunately I didn't listen to him. That's the reason this code is ugly.

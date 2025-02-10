@@ -28,7 +28,7 @@ fn main() {
 
     if let Some(x) = args.get(1) {
         if x == "--version" || x == "-v" {
-            println!("{}", "0.2.0".bold().green());
+            println!("{}", "0.2.2".bold().green());
             return ;
         }
         else if x == "--help" || x == "-h" {
@@ -128,6 +128,23 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
             red_handle_regex(state, regex_split, false);
         }
         else {
+            red_print_error();
+        }
+        return false;
+    }
+    // /?
+    else if input.chars().nth(0).unwrap() == '/' {
+        input.remove(0);
+        let re: Regex = Regex::new(input).unwrap();
+        let mut did_find: bool = false;
+        while start < state.content.len() {
+            if let Some(_) = re.find(state.content.get(start).unwrap()) {
+                red_print_lines(state, start, start, true);
+                did_find = true;
+            }
+            start += 1;
+        }
+        if !did_find {
             red_print_error();
         }
         return false;
