@@ -29,7 +29,7 @@ fn main() {
 
     if let Some(x) = args.get(1) {
         if x == "--version" || x == "-v" {
-            println!("{}", "0.2.2".bold().green());
+            println!("{}", "0.2.3".bold().green());
             return ;
         }
         else if x == "--help" || x == "-h" {
@@ -217,6 +217,9 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
                 return false;
             }
         }
+        else if comma_split.last().unwrap() == &"%" {
+            end = state.content.len() - 1;
+        }
         if start > end {
             red_print_error();
             return false;
@@ -257,7 +260,10 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
         'd' => {
             state.content.drain(start..=end);
             state.modified = true;
-            state.line = 0;
+            state.line = start;
+            if start >= state.content.len() {
+                state.line = state.content.len() - 1;
+            }
         }
         'c' => {
             state.content.drain(start..=end);
@@ -306,6 +312,7 @@ fn red_handle_regex(state: &mut RedState, input: &mut String, whole_file: bool) 
             state.content.insert(start, after);
             red_print_lines(state, start, start, true);
             did_changed = true;
+            state.modified = true;
         }
         start += 1;
     }
@@ -352,7 +359,12 @@ fn red_handle_single_command(state: &mut RedState, input: &mut String) -> bool {
         'a' | 'i' => { state.mode = MODES::INSERT; }
         'c' => { state.content.remove(state.line); state.mode = MODES::INSERT; }
 
-        'd' => { state.content.remove(state.line); }
+        'd' => {
+            state.content.remove(state.line);
+            if state.line >= state.content.len() {
+                state.line = state.content.len() - 1;
+            }
+        }
 
         _ => { red_print_error() }
     };
@@ -363,7 +375,7 @@ fn red_is_numbers(state: &mut RedState, input: &mut String) -> bool {
     if let Ok(x) = input.parse::<usize>() {
         if x <= state.content.len() && x != 0 {
             state.line = x - 1;
-            println!("{}", state.content.get(state.line).unwrap());
+            red_print_lines(state, state.line, state.line, true);
         }
         else {
             red_print_error();
@@ -389,7 +401,7 @@ fn red_init_state(args: Vec<String>) -> RedState {
         filename: String::new(),
         filesize: 0,
         modified: false,
-        prompt: false,
+        prompt: true,
     };
 
     if args.len() > 1 {

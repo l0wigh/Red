@@ -1,2 +1,2 @@
-- Finish the MANUAL.md
+- Add regex to line number mode
 - Create some automatic tests
