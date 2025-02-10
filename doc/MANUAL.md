@@ -43,3 +43,23 @@ Keep in mind that if you get a red '?' after using 'w' command, it means you nee
 You can then use 'q' to quit. If 'q' command gives you a red '?', you need to save the file or force quit using 'Q'.
 
 Good job ! You created your first file with Red ! That was easy right ? Right... ?
+
+## Search and Destroy (Replace)
+
+I'm sure you would like to know how to search and replace a mistyped word instead of rewriting the whole line. It's faily easy.
+
+Let's first learn how to search for every occurance of a word.
+
+You can simply use the search command `/` like this : /red
+
+This will print every lines containing the word red.
+
+Obviously you can search for more than just a word. We will see this later.
+
+Now let's see how to change a word with something else on the line you currently are.
+
+To see the line currently "locked" use `p` or `n` command.
+
+You can change line by simply putting the line number and hit enter.
+
+You are on the right line ? You good. Ok now, let's use the `s` command : s/ed/red

@@ -32,6 +32,7 @@ version = "0.2.2"
 dependencies = [
  "colored",
  "regex",
+ "sedregex",
 ]
 
 [[package]]
@@ -62,6 +63,15 @@ name = "regex-syntax"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
+
+[[package]]
+name = "sedregex"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19411e23596093f03bbd11dc45603b6329bb4bfec77b9fd13e2b9fc9b02efe3e"
+dependencies = [
+ "regex",
+]
 
 [[package]]
 name = "windows-sys"

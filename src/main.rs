@@ -4,6 +4,7 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::path::Path;
 use regex::Regex;
+use sedregex::ReplaceCommand;
 
 use colored::Colorize;
 
@@ -104,7 +105,6 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
     let mut command: char = '?';
     let mut comma_split: Vec<&str> = input.split(",").collect();
     let space_split: Vec<&str> = input.split(" ").collect();
-    let regex_split: Vec<&str> = input.split("/").collect();
 
     if state.content.len() == 0 {
         red_print_error();
@@ -118,8 +118,9 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
         if input.len() == 2 {
             command = input.pop().unwrap();
         }
-        else if input.chars().nth(1).unwrap() == 's' && regex_split.len() > 2 {
-            red_handle_regex(state, regex_split, true);
+        else if input.chars().nth(1).unwrap() == 's' {
+            input.remove(0);
+            red_handle_regex(state, input, true);
             return false;
         }
         else {
@@ -128,12 +129,7 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
     }
     // s?
     else if input.chars().nth(0).unwrap() == 's' {
-        if regex_split.len() > 2 {
-            red_handle_regex(state, regex_split, false);
-        }
-        else {
-            red_print_error();
-        }
+        red_handle_regex(state, input, false);
         return false;
     }
     // /?
@@ -279,18 +275,11 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
     return false;
 }
 
-fn red_handle_regex(state: &mut RedState, regex_split: Vec<&str>, whole_file: bool) {
-    let mut whole_line: bool = false;
+fn red_handle_regex(state: &mut RedState, input: &mut String, whole_file: bool) {
     let mut start: usize;
     let end: usize;
-    let re: Regex;
-    let replacer: &str = regex_split.get(2).unwrap();
     let mut did_changed: bool = false;
-
-    if regex_split.len() == 4 {
-        if regex_split.get(3).unwrap() == &"g" { whole_line = true; }
-        else { red_print_error(); return; }
-    }
+    let regex_cmd: ReplaceCommand<'_>;
 
     if whole_file {
         start = 0;
@@ -301,30 +290,26 @@ fn red_handle_regex(state: &mut RedState, regex_split: Vec<&str>, whole_file: bo
         end = state.line;
     }
 
-    re = Regex::new(regex_split.get(1).unwrap()).unwrap();
+    if let Ok(x) = ReplaceCommand::new(input) {
+        regex_cmd = x;
+    }
+    else {
+        red_print_error();
+        return ;
+    }
+
     while start <= end {
-        let to_replace: String = state.content.remove(start);
-        let mut print: bool = false;
-        if whole_line {
-            let changed = &re.replace_all(to_replace.as_str(), replacer);
-            state.content.insert(start, changed.to_string());
-            if changed != to_replace.as_str() {
-                print = true;
-            }
-        }
-        else {
-            let changed = &re.replace(to_replace.as_str(), replacer);
-            state.content.insert(start, changed.to_string());
-            if changed != to_replace.as_str() {
-                print = true;
-            }
-        }
-        if print {
+        let previous: &str = state.content.get(start).unwrap();
+        let after: String = regex_cmd.execute(previous).into_owned();
+        if previous != after {
+            state.content.remove(start);
+            state.content.insert(start, after);
             red_print_lines(state, start, start, true);
             did_changed = true;
         }
         start += 1;
     }
+
     if !did_changed {
         red_print_error();
     }
