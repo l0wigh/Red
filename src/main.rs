@@ -37,6 +37,10 @@ fn main() {
             println!("{}", "\nEd Manual will contain stuff not implemented in Red.\nJust try it and see if it works.".bold().green());
             return ;
         }
+        else if x == "--zen" || x == "-z" {
+            println!("{}", "Without Ed, no Ex. Without Ex, no Vi. Without Vi, no Vim. Without Vim, no Good Programmers.".bold().green());
+            return ;
+        }
     }
 
     let mut state: RedState = red_init_state(args);

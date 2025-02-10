@@ -14,9 +14,11 @@ Basic features coming from Ed are there. Some commands might not work **exactly*
 
 ## Build && Installation
 
-- Clone the repo
-- Enter the cloned repo folder
-- `cargo install --path .`
+You obviously need the rust toolchain installed on your machine.
+
+`git clone https://github.com/L0Wigh/Red && cd Red && cargo install --path .`
+
+If `~/.cargo/bin` is in your PATH, you now can run `red` to start having fun.
 
 ## Did you wrote this README.md with Red ?
 
