@@ -177,6 +177,16 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
     }
     // $?
     else if input.chars().nth(0).unwrap().is_numeric() && comma_split.len() != 2 {
+        for i in 0..input.len() {
+            if !input.chars().nth(i).unwrap().is_numeric() {
+                if input.chars().nth(i).unwrap() == 's' {
+                    let (number, regex) = input.split_at_mut(i);
+                    state.line = number.parse::<usize>().unwrap() - 1;
+                    red_handle_regex(state, &mut regex.to_string(), false);
+                    return false;
+                }
+            }
+        }
         command = input.pop().unwrap();
         if let Ok(x) = input.parse::<usize>() {
             if x != 0 && x <= state.content.len() {
