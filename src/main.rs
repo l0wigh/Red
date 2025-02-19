@@ -338,7 +338,7 @@ fn red_print_lines(state: &mut RedState, start: usize, end: usize, numbers: bool
     while l_start <= end {
         if numbers {
             let padding = (end + 1).to_string().len() - (l_start + 1).to_string().len();
-            println!("{}{}   {}",
+            println!("{}{}    {}",
                 " ".repeat(padding),
                 (l_start + 1).to_string().bold().green(),
                 state.content.get(l_start as usize).unwrap()
