@@ -29,7 +29,7 @@ fn main() {
 
     if let Some(x) = args.get(1) {
         if x == "--version" || x == "-v" {
-            println!("{}", "0.2.3".bold().green());
+            println!("{}", "0.2.4".bold().green());
             return ;
         }
         else if x == "--help" || x == "-h" {
