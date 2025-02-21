@@ -271,8 +271,11 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
             state.content.drain(start..=end);
             state.modified = true;
             state.line = start;
-            if start >= state.content.len() {
+            if start >= state.content.len() && state.content.len() != 0 {
                 state.line = state.content.len() - 1;
+            }
+            else {
+                state.line = 0;
             }
         }
         'c' => {
@@ -282,6 +285,7 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
             state.modified = true;
         }
 
+        'a' if start == end && state.line == 0 => { state.line = start; state.mode = MODES::INSERT; }
         'a' if start == end => { state.line = start + 1; state.mode = MODES::INSERT; }
         'i' if start == end => { state.line = start; state.mode = MODES::INSERT; }
 
