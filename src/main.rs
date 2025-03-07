@@ -29,7 +29,7 @@ fn main() {
 
     if let Some(x) = args.get(1) {
         if x == "--version" || x == "-v" {
-            println!("{}", "0.2.6".bold().green());
+            println!("{}", "0.2.7".bold().green());
             return ;
         }
         else if x == "--help" || x == "-h" {
@@ -56,7 +56,12 @@ fn red_main_loop(state: &mut RedState) {
     loop {
         input.clear();
         if state.prompt && state.mode != MODES::INSERT {
-            print!("{} {}", (state.line + 1).to_string().bold().green(), "*".to_string().bold().blue());
+            if state.modified {
+                print!("{} {}", (state.line + 1).to_string().bold().green(), "*".bold().yellow());
+            }
+            else {
+                print!("{} {}", (state.line + 1).to_string().bold().green(), "*".bold().blue());
+            }
             std::io::stdout().flush().unwrap();
         }
         if let Ok(_) = std::io::stdin().read_line(&mut input){
@@ -386,6 +391,7 @@ fn red_handle_single_command(state: &mut RedState, input: &mut String) -> bool {
             if state.line >= state.content.len() && state.content.len() != 0 {
                 state.line = state.content.len() - 1;
             }
+            state.modified = true;
         }
 
         _ => { red_print_error() }
