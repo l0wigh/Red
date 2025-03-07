@@ -56,7 +56,7 @@ fn red_main_loop(state: &mut RedState) {
     loop {
         input.clear();
         if state.prompt && state.mode != MODES::INSERT {
-            print!("{}", "*".to_string().bold().blue());
+            print!("{} {}", (state.line + 1).to_string().bold().green(), "*".to_string().bold().blue());
             std::io::stdout().flush().unwrap();
         }
         if let Ok(_) = std::io::stdin().read_line(&mut input){
@@ -374,8 +374,11 @@ fn red_handle_single_command(state: &mut RedState, input: &mut String) -> bool {
         'c' => { state.content.remove(state.line); state.mode = MODES::INSERT; }
 
         'd' => {
+            if state.content.len() == 0 {
+                return false;
+            }
             state.content.remove(state.line);
-            if state.line >= state.content.len() {
+            if state.line >= state.content.len() && state.content.len() != 0 {
                 state.line = state.content.len() - 1;
             }
         }
