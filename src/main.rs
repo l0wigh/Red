@@ -29,7 +29,7 @@ fn main() {
 
     if let Some(x) = args.get(1) {
         if x == "--version" || x == "-v" {
-            println!("{}", "0.2.4".bold().green());
+            println!("{}", "0.2.6".bold().green());
             return ;
         }
         else if x == "--help" || x == "-h" {
@@ -87,7 +87,12 @@ fn red_main_loop(state: &mut RedState) {
         }
         else if state.mode == MODES::INSERT {
             match input.chars().nth(0).unwrap() {
-                '.' => { state.mode = MODES::COMMAND; state.line -= 1; }
+                '.' if input.len() == 2 => {
+                    state.mode = MODES::COMMAND;
+                    if state.line > 0 {
+                        state.line -= 1;
+                    }
+                }
                 _ => {
                     input = input.trim_end().to_string();
                     state.content.insert(state.line, input.clone());
