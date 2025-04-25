@@ -46,7 +46,7 @@ Good job ! You created your first file with Red ! That was easy right ? Right...
 
 ## Search and Destroy (Replace)
 
-I'm sure you would like to know how to search and replace a mistyped word instead of rewriting the whole line. It's faily easy.
+I'm sure you would like to know how to search and replace a mistyped word instead of rewriting the whole line. It's fairly easy.
 
 Let's first learn how to search for every occurance of a word.
 
