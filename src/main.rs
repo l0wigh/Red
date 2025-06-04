@@ -1,10 +1,10 @@
-use std::env;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::prelude::*;
-use std::path::Path;
 use regex::Regex;
 use sedregex::ReplaceCommand;
+use std::env;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
+use std::path::Path;
 
 use colored::Colorize;
 
@@ -29,18 +29,32 @@ fn main() {
 
     if let Some(x) = args.get(1) {
         if x == "--version" || x == "-v" {
-            println!("{}", "0.2.7".bold().green());
-            return ;
-        }
-        else if x == "--help" || x == "-h" {
-            println!("{}", "Red Manual: https://github.com/l0wigh/Red/blob/master/doc/MANUAL.md".bold().green());
-            println!("{}", "Ed Manual: https://www.gnu.org/software/ed/manual/ed_manual.html".bold().green());
+            println!("{}", "0.3.0".bold().green());
+            return;
+        } else if x == "--help" || x == "-h" {
+            println!(
+                "{}",
+                "Red Manual: https://github.com/l0wigh/Red/blob/master/doc/MANUAL.md"
+                    .bold()
+                    .green()
+            );
+            println!(
+                "{}",
+                "Red Commands: https://github.com/l0wigh/Red/blob/master/doc/COMMANDS.md"
+                    .bold()
+                    .green()
+            );
+            println!(
+                "{}",
+                "Ed Manual: https://www.gnu.org/software/ed/manual/ed_manual.html"
+                    .bold()
+                    .green()
+            );
             println!("{}", "\nEd Manual will contain stuff not implemented in Red.\nJust try it and see if it works.".bold().green());
-            return ;
-        }
-        else if x == "--zen" || x == "-z" {
+            return;
+        } else if x == "--zen" || x == "-z" {
             println!("{}", "Without Ed, no Ex. Without Ex, no Vi. Without Vi, no Vim. Without Vim, no Good Programmers.".bold().green());
-            return ;
+            return;
         }
     }
 
@@ -56,41 +70,49 @@ fn red_main_loop(state: &mut RedState) {
     loop {
         input.clear();
         if state.prompt && state.mode != MODES::INSERT {
+            print!("\n");
             if state.modified {
-                print!("{} {}", (state.line + 1).to_string().bold().green(), "*".bold().yellow());
-            }
-            else {
-                print!("{} {}", (state.line + 1).to_string().bold().green(), "*".bold().blue());
+                print!(
+                    "[{}] {}",
+                    (state.line + 1).to_string().bold().green(),
+                    "*".bold().yellow()
+                );
+            } else {
+                print!(
+                    "[{}] {}",
+                    (state.line + 1).to_string().bold().green(),
+                    "*".bold().blue()
+                );
             }
             std::io::stdout().flush().unwrap();
         }
-        if let Ok(_) = std::io::stdin().read_line(&mut input){
+        if let Ok(_) = std::io::stdin().read_line(&mut input) {
             if state.mode == MODES::COMMAND {
+                print!("\n");
                 input = input.trim_end().to_string();
             }
-        }
-        else {
+        } else {
             red_print_error();
-            continue ;
+            continue;
         }
         if state.mode == MODES::COMMAND {
-            if red_is_numbers(state, &mut input) { continue ; }
+            if red_is_numbers(state, &mut input) {
+                continue;
+            }
             if input.len() == 0 {
                 red_print_error();
-                continue ;
+                continue;
             }
             if input.len() == 1 {
                 if red_handle_single_command(state, &mut input) {
-                    return ;
+                    return;
                 }
-            }
-            else {
+            } else {
                 if red_handle_multi_command(state, &mut input) {
-                    return ;
+                    return;
                 }
             }
-        }
-        else if state.mode == MODES::INSERT {
+        } else if state.mode == MODES::INSERT {
             match input.chars().nth(0).unwrap() {
                 '.' if input.len() == 2 => {
                     state.mode = MODES::COMMAND;
@@ -127,13 +149,11 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
         end = state.content.len() - 1;
         if input.len() == 2 {
             command = input.pop().unwrap();
-        }
-        else if input.chars().nth(1).unwrap() == 's' {
+        } else if input.chars().nth(1).unwrap() == 's' {
             input.remove(0);
             red_handle_regex(state, input, true);
             return false;
-        }
-        else {
+        } else {
             red_print_error()
         }
     }
@@ -165,21 +185,18 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
             start = 0;
             end = state.content.len() - 1;
             command = input.pop().unwrap();
-        }
-        else {
+        } else {
             command = input.pop().unwrap();
             let split: String = input.split(",").nth(1).unwrap().to_string();
             if let Ok(x) = split.parse::<usize>() {
                 if x != 0 && x <= state.content.len() {
                     start = state.line;
                     end = x - 1;
-                }
-                else {
+                } else {
                     red_print_error();
                     return false;
                 }
-            }
-            else {
+            } else {
                 red_print_error();
                 return false;
             }
@@ -202,13 +219,14 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
             if x != 0 && x <= state.content.len() {
                 start = x - 1;
                 end = x - 1;
-            }
-            else {
+            } else if x > state.content.len() && command == 'y' {
+                start = state.content.len();
+                end = state.content.len();
+            } else {
                 red_print_error();
                 return false;
             }
-        }
-        else {
+        } else {
             red_print_error();
             return false;
         }
@@ -222,8 +240,7 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
         if let Ok(x) = comma_split.first().unwrap().parse::<usize>() {
             if x != 0 && x <= state.content.len() {
                 start = x - 1;
-            }
-            else {
+            } else {
                 red_print_error();
                 return false;
             }
@@ -231,27 +248,23 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
         if let Ok(x) = comma_split.last().unwrap().parse::<usize>() {
             if x != 0 && x <= state.content.len() {
                 end = x - 1;
-            }
-            else {
+            } else {
                 red_print_error();
                 return false;
             }
-        }
-        else if comma_split.last().unwrap() == &"%" {
+        } else if comma_split.last().unwrap() == &"%" {
             end = state.content.len() - 1;
         }
         if start > end {
             red_print_error();
             return false;
         }
-    }
-    else if space_split.len() == 2 {
+    } else if space_split.len() == 2 {
         if let Some(x) = space_split.get(0) {
             if x.to_string() == "w" {
                 red_open_file(state, space_split.get(1).unwrap().to_string(), false, true);
                 red_save_file(state);
-            }
-            else {
+            } else {
                 red_print_error();
             }
             return false;
@@ -262,20 +275,22 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
         if state.filename.len() != 0 {
             red_save_file(state);
             return true;
-        }
-        else {
+        } else {
             red_print_error();
             return false;
         }
-    }
-    else {
+    } else {
         red_print_error();
         return false;
     }
 
     match command {
-        'p' => { red_print_lines(state, start, end, false); }
-        'n' => { red_print_lines(state, start, end, true); }
+        'p' => {
+            red_print_lines(state, start, end, false);
+        }
+        'n' => {
+            red_print_lines(state, start, end, true);
+        }
 
         'd' => {
             state.content.drain(start..=end);
@@ -283,8 +298,7 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
             state.line = start;
             if start >= state.content.len() && state.content.len() != 0 {
                 state.line = state.content.len() - 1;
-            }
-            else {
+            } else {
                 state.line = 0;
             }
         }
@@ -295,11 +309,34 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
             state.modified = true;
         }
 
-        'a' if start == end && state.line == 0 => { state.line = start; state.mode = MODES::INSERT; }
-        'a' if start == end => { state.line = start + 1; state.mode = MODES::INSERT; }
-        'i' if start == end => { state.line = start; state.mode = MODES::INSERT; }
+        'a' if start == end && state.line == 0 => {
+            state.line = start;
+            state.mode = MODES::INSERT;
+        }
+        'a' if start == end => {
+            state.line = start + 1;
+            state.mode = MODES::INSERT;
+        }
+        'i' if start == end => {
+            state.line = start;
+            state.mode = MODES::INSERT;
+        }
+        'y' if start == end => {
+            let copy = state.content.get(state.line as usize).unwrap().to_string();
+            state.content.insert(end, copy);
+            if end < state.line {
+                state.line += 1;
+            }
+            state.modified = true;
+        }
+        'r' if start == end => {
+            let replace = state.content.get(state.line as usize).unwrap().to_string();
+            state.content.drain(start..=end);
+            state.content.insert(end, replace);
+            state.modified = true;
+        }
 
-        _ => { red_print_error() }
+        _ => red_print_error(),
     }
 
     return false;
@@ -314,18 +351,16 @@ fn red_handle_regex(state: &mut RedState, input: &mut String, whole_file: bool) 
     if whole_file {
         start = 0;
         end = state.content.len() - 1;
-    }
-    else {
+    } else {
         start = state.line;
         end = state.line;
     }
 
     if let Ok(x) = ReplaceCommand::new(input) {
         regex_cmd = x;
-    }
-    else {
+    } else {
         red_print_error();
-        return ;
+        return;
     }
 
     while start <= end {
@@ -352,13 +387,13 @@ fn red_print_lines(state: &mut RedState, start: usize, end: usize, numbers: bool
     while l_start <= end {
         if numbers {
             let padding = (end + 1).to_string().len() - (l_start + 1).to_string().len();
-            println!("{}{}    {}",
+            println!(
+                "{}{}    {}",
                 " ".repeat(padding),
                 (l_start + 1).to_string().bold().green(),
                 state.content.get(l_start as usize).unwrap()
             );
-        }
-        else {
+        } else {
             println!("{}", state.content.get(l_start as usize).unwrap());
         }
         l_start += 1;
@@ -368,20 +403,48 @@ fn red_print_lines(state: &mut RedState, start: usize, end: usize, numbers: bool
 fn red_handle_single_command(state: &mut RedState, input: &mut String) -> bool {
     let command: char = input.chars().nth(0).unwrap();
     match command {
-        'P' => { state.prompt = !state.prompt; }
+        'P' => {
+            state.prompt = !state.prompt;
+        }
 
-        ',' if state.content.len() != 0 => { state.line = state.content.len() - 1; println!("{}", state.content.get(state.line).unwrap()); }
-        '%' if state.content.len() != 0 => { state.line = state.content.len() - 1; println!("{}", state.content.get(state.line).unwrap()); }
-        'p' if state.content.len() != 0 => { println!("{}", state.content.get(state.line).unwrap()); }
-        'n' if state.content.len() != 0 => { println!("{}    {}", (state.line + 1).to_string().bold().green(), state.content.get(state.line).unwrap()); }
+        ',' if state.content.len() != 0 => {
+            state.line = state.content.len() - 1;
+            println!("{}", state.content.get(state.line).unwrap());
+        }
+        '%' if state.content.len() != 0 => {
+            state.line = state.content.len() - 1;
+            println!("{}", state.content.get(state.line).unwrap());
+        }
+        'p' if state.content.len() != 0 => {
+            println!("{}", state.content.get(state.line).unwrap());
+        }
+        'n' if state.content.len() != 0 => {
+            println!(
+                "{}    {}",
+                (state.line + 1).to_string().bold().green(),
+                state.content.get(state.line).unwrap()
+            );
+        }
 
-        'q' if !state.modified => { return true; }
-        'Q' => { return true; }
-        'w' if state.filename.len() != 0 => { red_save_file(state) }
+        'q' if !state.modified => {
+            return true;
+        }
+        'Q' => {
+            return true;
+        }
+        'w' if state.filename.len() != 0 => red_save_file(state),
 
-        'a' if state.content.len() != 0 => { state.line += 1; state.mode = MODES::INSERT; }
-        'a' | 'i' => { state.mode = MODES::INSERT; }
-        'c' => { state.content.remove(state.line); state.mode = MODES::INSERT; }
+        'a' if state.content.len() != 0 => {
+            state.line += 1;
+            state.mode = MODES::INSERT;
+        }
+        'a' | 'i' => {
+            state.mode = MODES::INSERT;
+        }
+        'c' => {
+            state.content.remove(state.line);
+            state.mode = MODES::INSERT;
+        }
 
         'd' => {
             if state.content.len() == 0 {
@@ -394,7 +457,7 @@ fn red_handle_single_command(state: &mut RedState, input: &mut String) -> bool {
             state.modified = true;
         }
 
-        _ => { red_print_error() }
+        _ => red_print_error(),
     };
     return false;
 }
@@ -404,8 +467,7 @@ fn red_is_numbers(state: &mut RedState, input: &mut String) -> bool {
         if x <= state.content.len() && x != 0 {
             state.line = x - 1;
             red_print_lines(state, state.line, state.line, true);
-        }
-        else {
+        } else {
             red_print_error();
         }
         return true;
@@ -440,9 +502,12 @@ fn red_init_state(args: Vec<String>) -> RedState {
 
 fn red_open_file(state: &mut RedState, filename: String, verbose: bool, safeguard: bool) {
     if Path::new(&filename).is_dir() {
-        println!("{}{}", filename.bold().red(), ": is a folder".to_string().bold().red());
-    }
-    else if Path::new(&filename).exists() {
+        println!(
+            "{}{}",
+            filename.bold().red(),
+            ": is a folder".to_string().bold().red()
+        );
+    } else if Path::new(&filename).exists() {
         state.filename = filename;
         if !safeguard {
             if let Ok(file) = File::open(&state.filename) {
@@ -456,8 +521,7 @@ fn red_open_file(state: &mut RedState, filename: String, verbose: bool, safeguar
         if state.content.len() != 0 {
             state.line = state.content.len() - 1;
         }
-    }
-    else {
+    } else {
         state.filename = filename;
         println!("{}", "Creating a new file".to_string().bold().yellow());
         if verbose {
@@ -469,11 +533,10 @@ fn red_open_file(state: &mut RedState, filename: String, verbose: bool, safeguar
 fn red_save_file(state: &mut RedState) {
     if let Ok(mut x) = File::create(&state.filename) {
         _ = x.write_all(state.content.join("\n").as_bytes());
-    }
-    else {
+    } else {
         println!("{}", "File is protected".to_string().bold().red());
         state.filename = "".to_string();
-        return ;
+        return;
     }
     state.modified = false;
     state.filesize = std::fs::metadata(&state.filename).unwrap().len();
