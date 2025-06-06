@@ -1,1 +1,5 @@
+- Add range for regex and for yank and replace
+	- [ ] regex
+	- [x] yank
+	- [x] replace
 - Create some automatic tests

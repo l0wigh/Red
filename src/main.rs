@@ -29,7 +29,7 @@ fn main() {
 
     if let Some(x) = args.get(1) {
         if x == "--version" || x == "-v" {
-            println!("{}", "0.3.0".bold().green());
+            println!("{}", "0.3.2".bold().green());
             return;
         } else if x == "--help" || x == "-h" {
             println!(
@@ -240,6 +240,8 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
         if let Ok(x) = comma_split.first().unwrap().parse::<usize>() {
             if x != 0 && x <= state.content.len() {
                 start = x - 1;
+            } else if x != 0 && x - 1 <= state.content.len() {
+                start = x - 1;
             } else {
                 red_print_error();
                 return false;
@@ -247,6 +249,8 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
         }
         if let Ok(x) = comma_split.last().unwrap().parse::<usize>() {
             if x != 0 && x <= state.content.len() {
+                end = x - 1;
+            } else if x > state.content.len() && command == 'y' {
                 end = x - 1;
             } else {
                 red_print_error();
@@ -291,7 +295,6 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
         'n' => {
             red_print_lines(state, start, end, true);
         }
-
         'd' => {
             state.content.drain(start..=end);
             state.modified = true;
@@ -308,7 +311,6 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
             state.line = start;
             state.modified = true;
         }
-
         'a' if start == end && state.line == 0 => {
             state.line = start;
             state.mode = MODES::INSERT;
@@ -321,21 +323,26 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
             state.line = start;
             state.mode = MODES::INSERT;
         }
-        'y' if start == end => {
+        'y' => {
             let copy = state.content.get(state.line as usize).unwrap().to_string();
-            state.content.insert(end, copy);
+            while start <= end {
+                state.content.insert(start, copy.clone());
+                start += 1;
+            }
             if end < state.line {
                 state.line += 1;
             }
             state.modified = true;
         }
-        'r' if start == end => {
+        'r' => {
             let replace = state.content.get(state.line as usize).unwrap().to_string();
             state.content.drain(start..=end);
-            state.content.insert(end, replace);
+            while start <= end {
+                state.content.insert(start, replace.clone());
+                start += 1;
+            }
             state.modified = true;
         }
-
         _ => red_print_error(),
     }
 
