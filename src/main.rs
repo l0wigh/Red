@@ -22,6 +22,8 @@ struct RedState {
     filesize: u64,
     modified: bool,
     prompt: bool,
+    insert_before: bool,
+    insert_after: bool,
 }
 
 fn main() {
@@ -29,7 +31,7 @@ fn main() {
 
     if let Some(x) = args.get(1) {
         if x == "--version" || x == "-v" {
-            println!("{}", "0.3.2".bold().green());
+            println!("{}", "0.3.6".bold().green());
             return;
         } else if x == "--help" || x == "-h" {
             println!(
@@ -121,8 +123,26 @@ fn red_main_loop(state: &mut RedState) {
                     }
                 }
                 _ => {
-                    input = input.trim_end().to_string();
-                    state.content.insert(state.line, input.clone());
+                    if state.insert_before {
+                        input = input.trim_end_matches('\n').to_string();
+                        state.content.insert(state.line, format!("{}{}", input.clone(), state.content.get(state.line).unwrap()));
+                        if state.content.len() != 0 {
+                            state.content.remove(state.line + 1);
+                        }
+                        state.insert_before = false
+                    }
+                    else if state.insert_after {
+                        input = input.trim_end().to_string();
+                        state.content.insert(state.line, format!("{}{}", state.content.get(state.line).unwrap(), input.clone()));
+                        if state.content.len() != 0 {
+                            state.content.remove(state.line + 1);
+                        }
+                        state.insert_after = false
+                    }
+                    else {
+                        input = input.trim_end().to_string();
+                        state.content.insert(state.line, input.clone());
+                    }
                     state.line += 1;
                     state.modified = true;
                 }
@@ -311,15 +331,15 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
             state.line = start;
             state.modified = true;
         }
-        'a' if start == end && state.line == 0 => {
+        'o' if start == end && state.line == 0 => {
             state.line = start;
             state.mode = MODES::INSERT;
         }
-        'a' if start == end => {
+        'o' if start == end => {
             state.line = start + 1;
             state.mode = MODES::INSERT;
         }
-        'i' if start == end => {
+        'O' if start == end => {
             state.line = start;
             state.mode = MODES::INSERT;
         }
@@ -342,6 +362,16 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
                 start += 1;
             }
             state.modified = true;
+        }
+        'a' => {
+            state.line = start;
+            state.mode = MODES::INSERT;
+            state.insert_before = true;
+        }
+        'i' => {
+            state.line = start;
+            state.mode = MODES::INSERT;
+            state.insert_after = true;
         }
         _ => red_print_error(),
     }
@@ -432,7 +462,6 @@ fn red_handle_single_command(state: &mut RedState, input: &mut String) -> bool {
                 state.content.get(state.line).unwrap()
             );
         }
-
         'q' if !state.modified => {
             return true;
         }
@@ -441,18 +470,17 @@ fn red_handle_single_command(state: &mut RedState, input: &mut String) -> bool {
         }
         'w' if state.filename.len() != 0 => red_save_file(state),
 
-        'a' if state.content.len() != 0 => {
+        'o' if state.content.len() != 0 => {
             state.line += 1;
             state.mode = MODES::INSERT;
         }
-        'a' | 'i' => {
+        'o' | 'O' => {
             state.mode = MODES::INSERT;
         }
         'c' => {
             state.content.remove(state.line);
             state.mode = MODES::INSERT;
         }
-
         'd' => {
             if state.content.len() == 0 {
                 return false;
@@ -463,7 +491,26 @@ fn red_handle_single_command(state: &mut RedState, input: &mut String) -> bool {
             }
             state.modified = true;
         }
-
+        'k' => {
+            if state.line != 0 {
+                state.line = state.line - 1;
+            }
+            println!("{}", state.content.get(state.line).unwrap());
+        }
+        'j' => {
+            if state.line + 1 < state.content.len() {
+                state.line = state.line + 1
+            }
+            println!("{}", state.content.get(state.line).unwrap());
+        }
+        'a' => {
+            state.mode = MODES::INSERT;
+            state.insert_before = true;
+        }
+        'i' => {
+            state.mode = MODES::INSERT;
+            state.insert_after = true;
+        }
         _ => red_print_error(),
     };
     return false;
@@ -499,6 +546,8 @@ fn red_init_state(args: Vec<String>) -> RedState {
         filesize: 0,
         modified: false,
         prompt: true,
+        insert_before: false,
+        insert_after: false,
     };
 
     if args.len() > 1 {

@@ -1,3 +1,4 @@
+- Find a way to handle line editing better. You can replace a and i with o and O. a and i would be used a begginning or end of line. Then maybe add e for editing the line
 - Add range for regex and for yank and replace
 	- [ ] regex
 	- [x] yank
