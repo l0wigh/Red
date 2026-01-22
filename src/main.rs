@@ -1,5 +1,3 @@
-use regex::Regex;
-use sedregex::ReplaceCommand;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
@@ -7,6 +5,12 @@ use std::io::BufReader;
 use std::path::Path;
 
 use colored::Colorize;
+use regex::Regex;
+use rustyline::history::History;
+use sedregex::ReplaceCommand;
+use rustyline::error::ReadlineError;
+use rustyline::history::SearchDirection;
+use rustyline::DefaultEditor;
 
 #[derive(PartialEq, Eq)]
 enum MODES {
@@ -22,8 +26,6 @@ struct RedState {
     filesize: u64,
     modified: bool,
     prompt: bool,
-    insert_before: bool,
-    insert_after: bool,
 }
 
 fn main() {
@@ -31,7 +33,7 @@ fn main() {
 
     if let Some(x) = args.get(1) {
         if x == "--version" || x == "-v" {
-            println!("{}", "0.3.6".bold().green());
+            println!("{}", "0.4.0".bold().green());
             return;
         } else if x == "--help" || x == "-h" {
             println!(
@@ -61,52 +63,72 @@ fn main() {
     }
 
     let mut state: RedState = red_init_state(args);
+    let mut rl = DefaultEditor::new().expect("Failed to init Red");
 
-    red_main_loop(&mut state);
+    red_main_loop(&mut state, &mut rl);
     red_print_goodbye();
 }
 
-fn red_main_loop(state: &mut RedState) {
-    let mut input: String = String::new();
-
+fn red_main_loop(state: &mut RedState, mut rl: &mut DefaultEditor) {
     loop {
-        input.clear();
+        let mut prompt = String::new();
         if state.prompt && state.mode != MODES::INSERT {
-            print!("\n");
-            if state.modified {
-                print!(
-                    "[{}] {}",
-                    (state.line + 1).to_string().bold().green(),
-                    "*".bold().yellow()
-                );
+            let star = if state.modified {
+                "*".bold().yellow()
             } else {
-                print!(
-                    "[{}] {}",
-                    (state.line + 1).to_string().bold().green(),
-                    "*".bold().blue()
-                );
-            }
-            std::io::stdout().flush().unwrap();
+                "*".bold().blue()
+            };
+            prompt = format!(
+                "\n[{}] {}",
+                (state.line + 1).to_string().bold().green(),
+                star
+            );
         }
-        if let Ok(_) = std::io::stdin().read_line(&mut input) {
-            if state.mode == MODES::COMMAND {
-                print!("\n");
-                input = input.trim_end().to_string();
+
+        let readline = rl.readline(&prompt);
+        let mut input = match readline {
+            Ok(line) => {
+                if state.mode == MODES::COMMAND && !line.trim().is_empty() {
+                    rl.add_history_entry(line.as_str()).ok();
+                }
+                if state.mode != MODES::INSERT {
+                    println!();
+                }
+                line
+            },
+            Err(ReadlineError::Interrupted) => {
+                red_print_error();
+                continue;
+            },
+            Err(ReadlineError::Eof) => break,
+            Err(_) => {
+                red_print_error();
+                continue;
             }
-        } else {
-            red_print_error();
-            continue;
-        }
+        };
         if state.mode == MODES::COMMAND {
+            input = input.trim().to_string();
             if red_is_numbers(state, &mut input) {
                 continue;
             }
             if input.len() == 0 {
-                red_print_error();
-                continue;
+                let history = rl.history();
+                if history.len() > 0 {
+                    let last_index = history.len() - 1;
+                    match history.get(last_index, SearchDirection::Forward) {
+                        Ok(Some(result)) => {
+                            input = result.entry.to_string();
+                        },
+                        Ok(None) => { red_print_error(); continue },
+                        Err(_) => { red_print_error(); continue }
+                    }
+                } else {
+                    red_print_error();
+                    continue;
+                }
             }
             if input.len() == 1 {
-                if red_handle_single_command(state, &mut input) {
+                if red_handle_single_command(state, &mut input, &mut rl) {
                     return;
                 }
             } else {
@@ -115,37 +137,16 @@ fn red_main_loop(state: &mut RedState) {
                 }
             }
         } else if state.mode == MODES::INSERT {
-            match input.chars().nth(0).unwrap() {
-                '.' if input.len() == 2 => {
-                    state.mode = MODES::COMMAND;
-                    if state.line > 0 {
-                        state.line -= 1;
-                    }
+            if input == "." {
+                state.mode = MODES::COMMAND;
+                if state.line > 0 {
+                    state.line -= 1;
                 }
-                _ => {
-                    if state.insert_before {
-                        input = input.trim_end_matches('\n').to_string();
-                        state.content.insert(state.line, format!("{}{}", input.clone(), state.content.get(state.line).unwrap()));
-                        if state.content.len() != 0 {
-                            state.content.remove(state.line + 1);
-                        }
-                        state.insert_before = false
-                    }
-                    else if state.insert_after {
-                        input = input.trim_end().to_string();
-                        state.content.insert(state.line, format!("{}{}", state.content.get(state.line).unwrap(), input.clone()));
-                        if state.content.len() != 0 {
-                            state.content.remove(state.line + 1);
-                        }
-                        state.insert_after = false
-                    }
-                    else {
-                        input = input.trim_end().to_string();
-                        state.content.insert(state.line, input.clone());
-                    }
-                    state.line += 1;
-                    state.modified = true;
-                }
+            } else {
+                input = input.trim_end().to_string();
+                state.content.insert(state.line, input.clone());
+                state.line += 1;
+                state.modified = true;
             }
         }
     }
@@ -331,15 +332,15 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
             state.line = start;
             state.modified = true;
         }
-        'o' if start == end && state.line == 0 => {
+        'i' if start == end && state.line == 0 => {
             state.line = start;
             state.mode = MODES::INSERT;
         }
-        'o' if start == end => {
+        'i' if start == end => {
             state.line = start + 1;
             state.mode = MODES::INSERT;
         }
-        'O' if start == end => {
+        'a' if start == end => {
             state.line = start;
             state.mode = MODES::INSERT;
         }
@@ -362,16 +363,6 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
                 start += 1;
             }
             state.modified = true;
-        }
-        'a' => {
-            state.line = start;
-            state.mode = MODES::INSERT;
-            state.insert_before = true;
-        }
-        'i' => {
-            state.line = start;
-            state.mode = MODES::INSERT;
-            state.insert_after = true;
         }
         _ => red_print_error(),
     }
@@ -437,7 +428,7 @@ fn red_print_lines(state: &mut RedState, start: usize, end: usize, numbers: bool
     }
 }
 
-fn red_handle_single_command(state: &mut RedState, input: &mut String) -> bool {
+fn red_handle_single_command(state: &mut RedState, input: &mut String, rl: &mut DefaultEditor) -> bool {
     let command: char = input.chars().nth(0).unwrap();
     match command {
         'P' => {
@@ -470,11 +461,11 @@ fn red_handle_single_command(state: &mut RedState, input: &mut String) -> bool {
         }
         'w' if state.filename.len() != 0 => red_save_file(state),
 
-        'o' if state.content.len() != 0 => {
+        'i' if state.content.len() != 0 => {
             state.line += 1;
             state.mode = MODES::INSERT;
         }
-        'o' | 'O' => {
+        'i' | 'a' => {
             state.mode = MODES::INSERT;
         }
         'c' => {
@@ -503,13 +494,21 @@ fn red_handle_single_command(state: &mut RedState, input: &mut String) -> bool {
             }
             println!("{}", state.content.get(state.line).unwrap());
         }
-        'a' => {
-            state.mode = MODES::INSERT;
-            state.insert_before = true;
-        }
-        'i' => {
-            state.mode = MODES::INSERT;
-            state.insert_after = true;
+        'e' => {
+            if !state.content.is_empty() {
+                let curr_line = state.content.get(state.line).unwrap().clone();
+                match rl.readline_with_initial("", (&curr_line, "")) {
+                    Ok(new_line) => {
+                        if !new_line.is_empty() {
+                            state.content[state.line] = new_line;
+                            state.modified = true;
+                        }
+                    },
+                    Err(_) => { red_print_error(); }
+                }
+            } else {
+                red_print_error();
+            }
         }
         _ => red_print_error(),
     };
@@ -546,8 +545,6 @@ fn red_init_state(args: Vec<String>) -> RedState {
         filesize: 0,
         modified: false,
         prompt: true,
-        insert_before: false,
-        insert_after: false,
     };
 
     if args.len() > 1 {

@@ -12,6 +12,8 @@ Without Ed, no Ex. Without Ex, no Vi. Without Vi, no Vim. Without Vim, no Good P
 
 Basic features coming from Ed are there. Some commands might not work **exactly** like you would expect. I made some choices that feels more natural to me. For example I implemented regex search on the whole file with the `/` command. That is not the way it works in Ed or Ex. I just feel that it's more confortable.
 
+Since version 0.4.0, Red uses rustyline wich gives a better "REPL" experience. You can use arrows to go up and down in the history, and also use left/right arrows to edit the line you are working on. This is a huge step-up, and it now feels way more useable for small coding sessions. It still not as good as a full fledge modern editor, but it's not a pain to use any more.
+
 ## Build && Installation
 
 You obviously need the rust toolchain installed on your machine.

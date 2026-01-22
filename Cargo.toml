@@ -1,9 +1,10 @@
 [package]
 name = "red"
-version = "0.3.6"
+version = "0.4.0"
 edition = "2021"
 
 [dependencies]
 colored = "3.0.0"
 regex = "1.11.1"
+rustyline = "17.0.2"
 sedregex = "0.2.5"
