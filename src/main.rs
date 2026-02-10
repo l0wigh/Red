@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
+use std::process::Command;
 
 use colored::Colorize;
 use regex::Regex;
@@ -34,7 +35,7 @@ fn main() {
 
     if let Some(x) = args.get(1) {
         if x == "--version" || x == "-v" {
-            println!("{}", "0.4.1".bold().green());
+            println!("{}", "0.5.0".bold().green());
             return;
         } else if x == "--help" || x == "-h" {
             println!(
@@ -298,6 +299,28 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
         }
     }
     // Special cases
+    else if input.chars().nth(0).unwrap() == '!' {
+        let shell_command = &input[1..].trim();
+        if !shell_command.is_empty() {
+            match Command::new("sh").arg("-c").arg(shell_command).output() {
+                Ok(output) => {
+                    if !output.stdout.is_empty() {
+                        println!("{}", String::from_utf8_lossy(&output.stdout));
+                    }
+                    if !output.stderr.is_empty() {
+                        eprintln!("{}", String::from_utf8_lossy(&output.stderr));
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to execute command: {}", e);
+                    red_print_error();
+                }
+            }
+        } else {
+            red_print_error();
+        }
+        return false;
+    }
     else if input == "wq" {
         if state.filename.len() != 0 {
             red_save_file(state);
@@ -487,14 +510,14 @@ fn red_handle_single_command(state: &mut RedState, input: &mut String, rl: &mut 
         'k' => {
             if state.line != 0 {
                 state.line = state.line - 1;
+                println!("{}", state.content.get(state.line).unwrap());
             }
-            println!("{}", state.content.get(state.line).unwrap());
         }
         'j' => {
             if state.line + 1 < state.content.len() {
-                state.line = state.line + 1
+                state.line = state.line + 1;
+                println!("{}", state.content.get(state.line).unwrap());
             }
-            println!("{}", state.content.get(state.line).unwrap());
         }
         'e' => {
             if !state.content.is_empty() {
