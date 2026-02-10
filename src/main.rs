@@ -111,6 +111,28 @@ fn red_main_loop(state: &mut RedState, mut rl: &mut DefaultEditor) {
         };
         if state.mode == MODES::COMMAND {
             input = input.trim().to_string();
+            if input.starts_with("!") {
+                let shell_command = &input[1..].trim();
+                if !shell_command.is_empty() {
+                    match Command::new("sh").arg("-c").arg(shell_command).output() {
+                        Ok(output) => {
+                            if !output.stdout.is_empty() {
+                                println!("{}", String::from_utf8_lossy(&output.stdout));
+                            }
+                            if !output.stderr.is_empty() {
+                                eprintln!("{}", String::from_utf8_lossy(&output.stderr));
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to execute command: {}", e);
+                            red_print_error();
+                        }
+                    }
+                } else {
+                    red_print_error();
+                }
+                continue;
+            }
             if red_is_numbers(state, &mut input) {
                 continue;
             }
@@ -298,29 +320,7 @@ fn red_handle_multi_command(state: &mut RedState, input: &mut String) -> bool {
             return false;
         }
     }
-    // Special cases
-    else if input.chars().nth(0).unwrap() == '!' {
-        let shell_command = &input[1..].trim();
-        if !shell_command.is_empty() {
-            match Command::new("sh").arg("-c").arg(shell_command).output() {
-                Ok(output) => {
-                    if !output.stdout.is_empty() {
-                        println!("{}", String::from_utf8_lossy(&output.stdout));
-                    }
-                    if !output.stderr.is_empty() {
-                        eprintln!("{}", String::from_utf8_lossy(&output.stderr));
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Failed to execute command: {}", e);
-                    red_print_error();
-                }
-            }
-        } else {
-            red_print_error();
-        }
-        return false;
-    }
+
     else if input == "wq" {
         if state.filename.len() != 0 {
             red_save_file(state);
