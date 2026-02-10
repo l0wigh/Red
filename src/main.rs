@@ -11,6 +11,7 @@ use sedregex::ReplaceCommand;
 use rustyline::error::ReadlineError;
 use rustyline::history::SearchDirection;
 use rustyline::DefaultEditor;
+use rustyline::{Cmd, EventHandler, KeyCode, KeyEvent, Modifiers};
 
 #[derive(PartialEq, Eq)]
 enum MODES {
@@ -64,6 +65,7 @@ fn main() {
 
     let mut state: RedState = red_init_state(args);
     let mut rl = DefaultEditor::new().expect("Failed to init Red");
+    rl.bind_sequence(KeyEvent(KeyCode::Tab, Modifiers::NONE), EventHandler::Simple(Cmd::Insert(1, "\t".to_string())));
 
     red_main_loop(&mut state, &mut rl);
     red_print_goodbye();
